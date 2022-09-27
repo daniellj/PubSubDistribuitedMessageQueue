@@ -1,0 +1,10 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# Private Files
+
+# VSCode
+.vscode/*
+
+# Local History for Visual Studio Code
+.history/
