@@ -17,7 +17,7 @@ All Kafka agents working on a topic (name = topic_01), with replication factor =
 
 The Producer and Consumers are running on the database server (PostgreSQL), as a client. All machines are on the same network.
 
-All server are running in Linux Ubuntu Operational System.
+All servers are running in Linux Ubuntu Operational System.
 
 # Install driver dependency on server where application is running (Python)
 sudo apt-get install libcppdb-postgresql0 odbc-postgresql
