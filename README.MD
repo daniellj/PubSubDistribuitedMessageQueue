@@ -1,6 +1,5 @@
 # Architecture
 
-Dockers:
 How to startup [Apache-Zookeeper](https://github.com/daniellj/containers/tree/main/CoordinationDistributedEnvironments/ApacheZookeeper) in docker.
 - Server_01 + JDK 8: port 2180
 - Server_02 + JDK 8: port 2180
