@@ -80,7 +80,6 @@ class Database():
         for attempt in range(self.reconnection_attempts):
             try:
                 self.conn.execute(query, params)
-                #self.conn.commit()
 
             except BaseException as err:
                 logger.error(f"ERROR: Failed update data | Query: {query_name} | Params: {params}")
@@ -124,11 +123,11 @@ class MessageQueue():
                                     ,value=message
                                     ,on_delivery=self.producer_delivery_report
                                 )
-                
-                # Synchronous writes
-                #producer.flush()
             else:
                 logger.error(f"WARNING: Empty message! @ {datetime.now()} | Message = {str(message)}")
+
+            # Synchronous writes
+            producer.flush()
  
         except BaseException as err:
             logger.error("ERROR: Failed attempt to send message!")

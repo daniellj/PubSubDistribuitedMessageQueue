@@ -1,1 +1,1 @@
-UPDATE_LAST_SALES_ID = """UPDATE dw.control_data_flow SET id = &id& WHERE schema_name = 'dw' and table_name = 'sales'"""
+UPDATE_LAST_SALES_ID = """UPDATE dw.control_data_flow SET id = %(id)s WHERE schema_name = 'dw' and table_name = 'sales'"""

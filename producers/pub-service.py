@@ -75,7 +75,7 @@ if __name__ == "__main__":
                     last_sales_id = sales_most_recent_date['id']
 
                     # update last sales Id on control table
-                    db_conn.update_data(query=UPDATE_LAST_SALES_ID.replace('&id&', str(last_sales_id)))
+                    db_conn.update_data(query=UPDATE_LAST_SALES_ID, params={"id": str(last_sales_id)})
 
                 # wait for the next process
                 time.sleep(message_sleep_time)
