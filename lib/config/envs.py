@@ -4,13 +4,15 @@ from json import load as json_load
 
 parameters_file=open("./.env")
 data = json_load(parameters_file)
-DATABASE_DRIVER = environ.get("{PostgreSQL ODBC Driver}", data["Database"]["PG_DRIVER"])
-DATABASE_HOST = environ.get("PG_HOST", data["Database"]["PG_HOST"])
-DATABASE_PORT = environ.get("PG_PORT", data["Database"]["PG_PORT"])
-DATABASE_NAME = environ.get("PG_DATABASE", data["Database"]["PG_DATABASE"])
-DATABASE_USER = environ.get("PG_USER", data["Database"]["PG_USER"])
-DATABASE_PASSWORD = environ.get("PG_PASSWORD", data["Database"]["PG_PASSWORD"])
+DATABASE_ENGINE = environ.get("{PostgreSQL ODBC Driver}", data["Database"]["DB_ENGINE"])
+DATABASE_DRIVER = environ.get("{PostgreSQL ODBC Driver}", data["Database"]["DB_DRIVER"])
+DATABASE_HOST = environ.get("DB_HOST", data["Database"]["DB_HOST"])
+DATABASE_PORT = environ.get("DB_PORT", data["Database"]["DB_PORT"])
+DATABASE_NAME = environ.get("DB_DATABASE", data["Database"]["DB_DATABASE"])
+DATABASE_USER = environ.get("DB_USER", data["Database"]["DB_USER"])
+DATABASE_PASSWORD = environ.get("DB_PASSWORD", data["Database"]["DB_PASSWORD"])
 SECONDS_DB_CONN = environ.get("SECONDS_DB_CONN", data["Database"]["SECONDS_DB_CONN"])
+DATABASE_RECONNECTION_ATTEMPTS = environ.get("DB_RECONNECTION_ATTEMPTS", data["Database"]["DB_RECONNECTION_ATTEMPTS"])
 
 LOGGING_LEVEL='ERROR'
 RECONNECTION_ATTEMPTS='5'
@@ -20,3 +22,5 @@ TOPIC_NAME = environ.get("TOPIC_NAME", data["MessageQueue"]["TOPIC_NAME"])
 
 MESSAGE_SLEEP_TIME = environ.get("MESSAGE_SLEEP_TIME", data["MessageQueue"]["MESSAGE_SLEEP_TIME"])
 MESSAGE_GET_ATTEMPTS = environ.get("MESSAGE_GET_ATTEMPTS", data["MessageQueue"]["MESSAGE_GET_ATTEMPTS"])
+
+PROJECT_PATH = environ.get("PROJECT_PATH", data["OsEnv"]["ProjectPath"])

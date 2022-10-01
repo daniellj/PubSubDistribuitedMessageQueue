@@ -3,7 +3,6 @@ pyodbc.pooling = False
 
 from typing import Optional
 from sqlalchemy import create_engine as sqlalchemy_create_engine
-from urllib.parse import quote_plus
 
 
 def get_connection(server: Optional[str]='',
@@ -29,42 +28,42 @@ def get_connection(server: Optional[str]='',
     """
 
     if conn_str is not None:
-        _, conn, _ = get_sqlalchemy_engine_conn_cursor(quote_plus(conn_str))
+        _, conn, _ = get_sqlalchemy_engine_conn_cursor(conn_str)
         return conn
 
     elif authentication is None:
         return pyodbc.connect(
-                quote_plus('DRIVER={ODBC Driver 17 for SQL Server};SERVER=') + quote_plus(server) + '.database.windows.net,1433',
-                user=quote_plus(user_name) + '@' + quote_plus(server),
-                password=quote_plus(password),
-                database=quote_plus(database)
+                ('DRIVER={ODBC Driver 17 for SQL Server};SERVER=') + server + '.database.windows.net,1433',
+                user=user_name + '@' + server,
+                password=password,
+                database=database
                 )
     else:
          return pyodbc.connect(
-                quote_plus('Driver={ODBC Driver 17 for SQL Server};') +
-                'Server=' + quote_plus(server) + ',1433' + ';'
-                'UID=' + quote_plus(user_name) + ';'
-                'PWD=' + quote_plus(password) + ';'
-                'Database=' + quote_plus(database) + ';'
+                'Driver={ODBC Driver 17 for SQL Server};' +
+                'Server=' + server + ',1433' + ';'
+                'UID=' + user_name + ';'
+                'PWD=' + password + ';'
+                'Database=' + database + ';'
                 'Authentication=' + authentication + ';'
-                ) 
+                )
 
 def close_cursor(cursor):
     if cursor is not None: cursor.close()
 
 def close_engine(engine):
-    if engine is not None: engine.dispose()
+    if engine is not None: engine.close()
 
 def close_connection(conn):
     if conn is not None: conn.close()
 
-def get_sqlalchemy_engine_conn_by_connection_string(connection_string):
-    return sqlalchemy_create_engine(quote_plus(connection_string), fast_executemany=True)
-
-def get_sqlalchemy_engine_conn_cursor(connection_string):
+def get_sqlalchemy_engine_conn_cursor(db_engine, connection_string):
     engine = None
     try:
-        engine = get_sqlalchemy_engine_conn_by_connection_string(connection_string)
+        if db_engine == 'mssql':
+            engine = sqlalchemy_create_engine(url=connection_string, fast_executemany=True)
+        elif db_engine == 'postgresql':
+            engine = sqlalchemy_create_engine(url=connection_string)
         conn = engine.raw_connection()
         cursor = conn.cursor()
         return cursor, engine, conn

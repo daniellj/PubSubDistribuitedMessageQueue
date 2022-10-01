@@ -10,12 +10,12 @@ logger = get_logger('BaseRepository')
 
 class Database():
 
-    def __init__(self, cursor, engine, conn, connection_string: str, reconnection_attempts: int=5):
+    def __init__(self, connection_string: str, reconnection_attempts: int=5):
         self.reconnection_attempts = reconnection_attempts
         self.connection_string = connection_string
-        self.cursor = cursor
-        self.engine = engine
-        self.conn = conn
+        self.cursor = None
+        self.engine = None
+        self.conn = None
 
     @property
     def cursor(self):
@@ -123,6 +123,9 @@ class MessageQueue():
                                     ,value=message
                                     ,on_delivery=self.producer_delivery_report
                                 )
+                
+                # Synchronous writes
+                producer.flush()
             else:
                 logger.error(f"WARNING: Empty message! @ {datetime.now()} | Message = {str(message)}")
  
