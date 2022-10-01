@@ -5,6 +5,7 @@ from datetime import datetime
 from confluent_kafka import Producer, Consumer
 from json import loads as json_loads
 
+
 logger = get_logger('BaseRepository')
 
 
@@ -78,8 +79,8 @@ class Database():
     def update_data(self, query, params=None, dtype=None, query_name='Query-Name'):
         for attempt in range(self.reconnection_attempts):
             try:
-                self.cursor.execute(query, params)
-                self.conn.commit()
+                self.conn.execute(query, params)
+                #self.conn.commit()
 
             except BaseException as err:
                 logger.error(f"ERROR: Failed update data | Query: {query_name} | Params: {params}")
@@ -125,7 +126,7 @@ class MessageQueue():
                                 )
                 
                 # Synchronous writes
-                producer.flush()
+                #producer.flush()
             else:
                 logger.error(f"WARNING: Empty message! @ {datetime.now()} | Message = {str(message)}")
  

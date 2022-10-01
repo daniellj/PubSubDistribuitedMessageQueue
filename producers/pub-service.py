@@ -46,7 +46,6 @@ if __name__ == "__main__":
                 if message_get_attempts == 1:
                     # the first dabatase connection or renew after a long time
                     engine, conn, cursor = get_sqlalchemy_engine_conn_cursor(db_engine = DATABASE_ENGINE, connection_string = conn_db_str)
-                    del conn_db_str
                     db_conn.cursor = cursor
                     db_conn.engine = engine
                     db_conn.conn = conn
@@ -72,11 +71,11 @@ if __name__ == "__main__":
                                     )
 
                     # get the last sales id in data flow
-                    sales_most_recent_date = df.iloc[df["sales_date"].argmax()]
-                    last_sales_id = sales_most_recent_date['Id']
+                    sales_most_recent_date = df.iloc[df["id"].argmax()]
+                    last_sales_id = sales_most_recent_date['id']
 
                     # update last sales Id on control table
-                    db_conn.update_data(query=UPDATE_LAST_SALES_ID, params={"LastSalesId": last_sales_id})
+                    db_conn.update_data(query=UPDATE_LAST_SALES_ID.replace('&id&', str(last_sales_id)))
 
                 # wait for the next process
                 time.sleep(message_sleep_time)
