@@ -2,7 +2,6 @@ from lib.config.database import close_cursor, close_engine, close_connection, ge
 from lib.helpers.logging import get_logger
 import pandas as pd
 from datetime import datetime
-from confluent_kafka import Producer, Consumer
 from json import loads as json_loads
 
 
@@ -10,8 +9,8 @@ logger = get_logger('BaseRepository')
 
 
 class Database():
-
-    def __init__(self, connection_string: str, reconnection_attempts: int=5):
+    def __init__(self, db_engine: str, connection_string: str, reconnection_attempts: int=5):
+        self.db_engine = db_engine
         self.reconnection_attempts = reconnection_attempts
         self.connection_string = connection_string
         self.cursor = None
@@ -70,10 +69,10 @@ class Database():
                 if df.empty: logger.error(f"WARNING: No data | Query: {query_name} | Params: {params}")
                 return df
             except BaseException as err:
-                logger.error(f"ERROR: Failed attempt {attempt} to retrieve data | Query: {query_name} | Params: {params}")
+                logger.error(f"(ERROR) Failed attempt {attempt} to retrieve data | Query: {query_name} | Params: {params}")
                 logger.error(str(err))
                 self.close_engines()
-                self.engine, self.conn, self.cursor = get_sqlalchemy_engine_conn_cursor(self.connection_string)
+                self.engine, self.conn, self.cursor = get_sqlalchemy_engine_conn_cursor(db_engine = self.db_engine, connection_string = self.connection_string)
         return pd.DataFrame()
 
     def update_data(self, query, params=None, dtype=None, query_name='Query-Name'):
@@ -82,16 +81,40 @@ class Database():
                 self.conn.execute(query, params)
 
             except BaseException as err:
-                logger.error(f"ERROR: Failed update data | Query: {query_name} | Params: {params}")
+                logger.error(f"(ERROR) Failed update data | Query: {query_name} | Params: {params}")
                 logger.error(str(err))
                 self.close_engines()
-                self.engine, self.conn, self.cursor = get_sqlalchemy_engine_conn_cursor(self.connection_string)
+                self.engine, self.conn, self.cursor = get_sqlalchemy_engine_conn_cursor(db_engine = self.db_engine, connection_string = self.connection_string)
         return pd.DataFrame()
 
 class MessageQueue():
+    def __init__(self):
+        self.producer = None
+        self.consumer = None
 
-    def __init__(self, bootstrap_servers: str):
-        self.bootstrap_servers = bootstrap_servers
+    @property
+    def producer(self):
+        return self._producer
+
+    @property
+    def consumer(self):
+        return self._consumer
+
+    @producer.setter
+    def producer(self, value):
+         self._producer = value
+
+    @consumer.setter
+    def consumer(self, value):
+         self._consumer = value
+
+    @producer.deleter
+    def producer(self):
+        del self._producer
+
+    @consumer.deleter
+    def consumer(self):
+        del self._consumer
 
     def producer_delivery_report(err, msg):
         """
@@ -106,31 +129,24 @@ class MessageQueue():
             return
         print('Record {} successfully produced to {} [{}] at offset {}'.format(msg.key(), msg.topic(), msg.partition(), msg.offset()))
 
-    def producer(self, topic, message, key, **kwargs):
+    def publisher(self, topic, message, key=None):
         try:
-            conf = {
-            "bootstrap.servers": self.bootstrap_servers
-            }
-
-            # Create Producer instance
-            producer = Producer(**conf)
-
-            if len(str(message))>0:
+            if self.producer is not None and len(str(message))>0:
                # Send it to our 'messages' topic
-                print(f'INFO: Producing message @ {datetime.now()} | Message = {str(message)}')
-                producer.produce(    topic=topic
-                                    ,key=key
-                                    ,value=message
-                                    ,on_delivery=self.producer_delivery_report
-                                )
+                print(f'(INFO) Producing message @ {datetime.now()} | Message = {str(message)}')
+                self.producer.produce(
+                                         topic=topic
+                                        ,value=message
+                                        ,key=key
+                                        ,on_delivery=self.producer_delivery_report
+                                    )
             else:
-                logger.error(f"WARNING: Empty message! @ {datetime.now()} | Message = {str(message)}")
+                producer_status = f'type = {str(type(self.producer))}, object = {str(self.producer)}' if self.producer is not None else 'type = None'
+                message_status = str(len(str(message))) if message is not None else 'None'
+                logger.error(f"(WARNING) Producer status: {producer_status} | Message status: {message_status} | datetime: {datetime.now()}")
 
-            # Synchronous writes
-            producer.flush()
- 
         except BaseException as err:
-            logger.error("ERROR: Failed attempt to send message!")
+            logger.error("(ERROR) Failed attempt to send message!")
             logger.error(str(err))
 
     def consumer(self, group_id, **kwargs):
@@ -144,15 +160,12 @@ class MessageQueue():
             ,"auto.offset.reset": kwargs.get("auto.offset.reset") if "auto.offset.reset" in kwargs else "earliest"
             }
 
-            # Create Consumer instance
-            consumer = Consumer(**conf)
-            data = consumer.consume()
+            data = self.consumer.consume()
 
             if len(data)>0:
                 for message in data:
                     if len(str(message.value))>0:
                         message_value = json_loads(message.value)
-                        #message_value = message.value
                         print(
                                 "\n" +
                                 f"Header: {message.headers} | " +
@@ -164,8 +177,8 @@ class MessageQueue():
                         # HERE: do something with the message_value
 
                     else:
-                        logger.error(f"WARNING: Empty message! @ {datetime.now()} | Message = {str(message.value)}")
+                        logger.error(f"(WARNING) Empty message! @ {datetime.now()} | Message = {str(message.value)}")
 
         except BaseException as err:
-            logger.error(f"ERROR: Failed attempt to consume message!")
+            logger.error(f"(ERROR) Failed attempt to consume message!")
             logger.error(str(err))         

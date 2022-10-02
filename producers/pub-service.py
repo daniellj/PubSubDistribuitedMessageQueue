@@ -18,41 +18,51 @@ from lib.sql.dml import UPDATE_LAST_SALES_ID
 from lib.respositories.base import MessageQueue, Database
 from json import dumps as json_dumps, loads as json_loads
 
-from confluent_kafka.serialization import StringSerializer
 from uuid import uuid4
 from lib.config.database import get_sqlalchemy_engine_conn_cursor
+from confluent_kafka import Producer
 
 logger = get_logger('pub-service')
 
 
-# Messages will be serialized as JSON
-def serializer(message):
-    return json_dumps(message).encode('utf-8')
-
 if __name__ == "__main__":
     try:
+        conf = {
+        "bootstrap.servers": BOOTSTRAP_SERVERS
+        }
+        # Instantiate Producer
+        queue = MessageQueue()
+
+        # Instantiate Database
         conn_db_str = f"{DATABASE_ENGINE}://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_NAME}"
-        db_conn = Database(connection_string = conn_db_str, reconnection_attempts = int(DATABASE_RECONNECTION_ATTEMPTS))
+        db_conn = Database(db_engine = DATABASE_ENGINE, connection_string = conn_db_str, reconnection_attempts = int(DATABASE_RECONNECTION_ATTEMPTS))
 
         message_sleep_time = int(MESSAGE_SLEEP_TIME)
         message_get_attempts = int(MESSAGE_GET_ATTEMPTS)
         max_message_get_attempts = int(int(SECONDS_DB_CONN) / message_sleep_time)
-
-        #string_serializer = StringSerializer(codec='utf_8')
-        queue = MessageQueue(bootstrap_servers=BOOTSTRAP_SERVERS)
+ 
+        # delete sensible variables
+        del conn_db_str
+        del DATABASE_ENGINE
+        del DATABASE_USER
+        del DATABASE_PASSWORD
+        del DATABASE_HOST
+        del DATABASE_PORT
+        del DATABASE_NAME
 
         # Infinite loop - runs until you kill the program
         while True:
                 if message_get_attempts == 1:
+                    # the first producer connection or renew after a long time
+                    queue.producer = Producer(**conf)
                     # the first dabatase connection or renew after a long time
-                    engine, conn, cursor = get_sqlalchemy_engine_conn_cursor(db_engine = DATABASE_ENGINE, connection_string = conn_db_str)
+                    engine, conn, cursor = get_sqlalchemy_engine_conn_cursor(db_engine = db_conn.db_engine, connection_string = db_conn.connection_string)
                     db_conn.cursor = cursor
                     db_conn.engine = engine
                     db_conn.conn = conn
 
                 # get the last Id sent to control flow table
                 data_last_id_processed_control_flow = json_loads( (db_conn.retrieve_data(query=QUERY_RETRIEVE_LAST_ID_CONTROL_DATA_FLOW_TABLE, query_name='Retrieve Last Sales Id in control flow table')).to_json(orient="records") )
-                #data_last_id_processed_control_flow = db_conn.retrieve_data(query=QUERY_RETRIEVE_LAST_ID_CONTROL_DATA_FLOW_TABLE, query_name='Retrieve Last Sales Id in control flow table')
                 last_id_processed_control_flow = int(data_last_id_processed_control_flow[0]['id'])
 
                 # get the last Id sent to queue in the previous process
@@ -63,12 +73,17 @@ if __name__ == "__main__":
                     df = db_conn.retrieve_data(query=QUERY_RETRIEVE_LATEST_SALES, params={"id": last_id_processed_control_flow}, query_name='Retrieve Last Sales')
                     data = json_loads( df.to_json(orient="records") )
 
-                    for message in data:
+                    for msg in data:
                         # send the data to producer
-                        queue.producer(  topic=TOPIC_NAME
-                                        ,message=serializer(message=message)
-                                        ,key=str(uuid4())
-                                    )
+                        queue.publisher (
+                                             topic=TOPIC_NAME
+                                            ,message=json_dumps(msg).encode('utf-8')
+                                            ,key=str(uuid4())
+                                        )
+                        queue.producer.poll(0)
+
+                    # Synchronous writes
+                    queue.producer.flush()
 
                     # get the last sales id in data flow
                     sales_most_recent_date = df.iloc[df["id"].argmax()]
@@ -88,10 +103,12 @@ if __name__ == "__main__":
                     db_conn.close_cursor()
                     db_conn.close_engines()
                     db_conn.close_connection()
-                    # delete objects
+                    # delete db objects
                     del db_conn.cursor
                     del db_conn.engine
                     del db_conn.conn
+                    # delete queuue objects
+                    del queue.producer
                     # reset counter
                     message_get_attempts = 1
 

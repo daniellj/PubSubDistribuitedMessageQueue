@@ -52,7 +52,7 @@ def close_cursor(cursor):
     if cursor is not None: cursor.close()
 
 def close_engine(engine):
-    if engine is not None: engine.close()
+    if engine is not None: engine.dispose()
 
 def close_connection(conn):
     if conn is not None: conn.close()
