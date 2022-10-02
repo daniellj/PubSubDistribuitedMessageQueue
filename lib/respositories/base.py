@@ -63,16 +63,19 @@ class Database():
         close_connection(self.engine)
 
     def retrieve_data(self, query, params=None, dtype=None, query_name='Query-Name'):
-        for attempt in range(self.reconnection_attempts):
-            try:
-                df = pd.read_sql_query(query, self.conn, params=params, dtype=dtype)
-                if df.empty: logger.error(f"WARNING: No data | Query: {query_name} | Params: {params}")
-                return df
-            except BaseException as err:
-                logger.error(f"(ERROR) Failed attempt {attempt} to retrieve data | Query: {query_name} | Params: {params}")
-                logger.error(str(err))
-                self.close_engines()
-                self.engine, self.conn, self.cursor = get_sqlalchemy_engine_conn_cursor(db_engine = self.db_engine, connection_string = self.connection_string)
+        if self.conn is not None:
+            for attempt in range(self.reconnection_attempts):
+                try:
+                    df = pd.read_sql_query(query, self.conn, params=params, dtype=dtype)
+                    if df.empty: logger.error(f"WARNING: No data | Query: {query_name} | Params: {params}")
+                    return df
+                except BaseException as err:
+                    logger.error(f"(ERROR) Failed attempt {attempt} to retrieve data | Query: {query_name} | Params: {params}")
+                    logger.error(str(err))
+                    self.close_engines()
+                    self.engine, self.conn, self.cursor = get_sqlalchemy_engine_conn_cursor(db_engine = self.db_engine, connection_string = self.connection_string)
+        else:
+            logger.error(f"(ERROR) Failed to retrieve data: database connection is None! | Query: {query_name} | Params: {params}")
         return pd.DataFrame()
 
     def update_data(self, query, params=None, dtype=None, query_name='Query-Name'):

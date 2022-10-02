@@ -113,7 +113,7 @@ if __name__ == "__main__":
                     message_get_attempts = 1
 
     except BaseException as err:
-        logger.error("ERROR: Failed attempt to send message!")
+        logger.error("(ERROR) Failed attempt to send message!")
         logger.error(str(err))
 
     finally:
