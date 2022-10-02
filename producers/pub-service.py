@@ -2,9 +2,8 @@
 from os import environ
 from json import load as json_load
 
-parameters_file=open("./.env")
-data = json_load(parameters_file)
-PROJECT_PATH = environ.get("PROJECT_PATH", data["OsEnv"]["ProjectPath"])
+src_path = ( json_load( open("./.env") ) )["OsEnv"]["ProjectPath"]
+PROJECT_PATH = environ.get("PROJECT_PATH", src_path)
 
 from sys import path as sys_path
 sys_path.append(PROJECT_PATH) if PROJECT_PATH not in sys_path else True
@@ -103,12 +102,12 @@ if __name__ == "__main__":
                     db_conn.close_cursor()
                     db_conn.close_engines()
                     db_conn.close_connection()
-                    # delete db objects
-                    del db_conn.cursor
-                    del db_conn.engine
-                    del db_conn.conn
-                    # delete queuue objects
-                    del queue.producer
+                    # db objects
+                    db_conn.cursor = None
+                    db_conn.engine = None
+                    db_conn.conn = None
+                    # queuue objects
+                    queue.producer = None
                     # reset counter
                     message_get_attempts = 1
 
