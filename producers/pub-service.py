@@ -85,7 +85,7 @@ if __name__ == "__main__":
                         queue.producer.poll(0)
 
                     # Synchronous writes
-                    queue.producer.flush()
+                    #queue.producer.flush()
 
                     # get the last sales id in data flow
                     sales_most_recent_date = df.iloc[df["id"].argmax()]

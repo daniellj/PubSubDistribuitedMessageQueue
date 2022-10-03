@@ -119,7 +119,7 @@ class MessageQueue():
     def consumer(self):
         del self._consumer
 
-    def producer_delivery_report(err, msg):
+    def producer_delivery_report(err, msg, out=None):
         """
         Reports the success or failure of a message delivery.
         Args:
@@ -128,9 +128,10 @@ class MessageQueue():
         """
 
         if err is not None:
-            print("Delivery failed for record {}: {}".format(msg.key(), err))
-            return
-        print('Record {} successfully produced to {} [{}] at offset {}'.format(msg.key(), msg.topic(), msg.partition(), msg.offset()))
+            #print("Delivery failed for record {}: {}".format(err))
+            print("Delivery failed for record!")
+        else:
+            print('Record {} successfully produced to {} [{}] at offset {}'.format(msg.key(), msg.topic(), msg.partition(), msg.offset()))
 
     def publisher(self, topic, message, key=None):
         try:
