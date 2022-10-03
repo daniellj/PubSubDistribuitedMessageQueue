@@ -21,6 +21,7 @@ from uuid import uuid4
 from lib.config.database import get_sqlalchemy_engine_conn_cursor
 from confluent_kafka import Producer
 
+
 logger = get_logger('pub-service')
 
 
@@ -29,6 +30,8 @@ if __name__ == "__main__":
         conf = {
         "bootstrap.servers": BOOTSTRAP_SERVERS
         }
+
+       
         # Instantiate Producer
         queue = MessageQueue()
 

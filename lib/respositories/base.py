@@ -141,7 +141,7 @@ class MessageQueue():
                                          topic=topic
                                         ,value=message
                                         ,key=key
-                                        ,on_delivery=self.producer_delivery_report
+                                        #,on_delivery=self.producer_delivery_report
                                     )
             else:
                 producer_status = f'type = {str(type(self.producer))}, object = {str(self.producer)}' if self.producer is not None else 'type = None'
