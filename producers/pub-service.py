@@ -54,65 +54,66 @@ if __name__ == "__main__":
 
         # Infinite loop - runs until you kill the program
         while True:
-                if message_get_attempts == 1:
-                    # the first producer connection or renew after a long time
-                    queue.producer = Producer(**conf)
-                    # the first dabatase connection or renew after a long time
-                    engine, conn, cursor = get_sqlalchemy_engine_conn_cursor(db_engine = db_conn.db_engine, connection_string = db_conn.connection_string)
-                    db_conn.cursor = cursor
-                    db_conn.engine = engine
-                    db_conn.conn = conn
+            queue.producer.poll(1)
 
-                # get the last Id sent to control flow table
-                data_last_id_processed_control_flow = json_loads( (db_conn.retrieve_data(query=QUERY_RETRIEVE_LAST_ID_CONTROL_DATA_FLOW_TABLE, query_name='Retrieve Last Sales Id in control flow table')).to_json(orient="records") )
-                last_id_processed_control_flow = int(data_last_id_processed_control_flow[0]['id'])
+            if message_get_attempts == 1:
+                # the first producer connection or renew after a long time
+                queue.producer = Producer(**conf)
+                # the first dabatase connection or renew after a long time
+                engine, conn, cursor = get_sqlalchemy_engine_conn_cursor(db_engine = db_conn.db_engine, connection_string = db_conn.connection_string)
+                db_conn.cursor = cursor
+                db_conn.engine = engine
+                db_conn.conn = conn
 
-                # get the last Id sent to queue in the previous process
-                data_last_id_business_table = json_loads( (db_conn.retrieve_data(query=QUERY_RETRIEVE_LAST_ID_BUSINESS_TABLE, query_name='Retrieve Last Sales Id')).to_json(orient="records") )
-                last_id_business_table = int(data_last_id_business_table[0]['id'])
+            # get the last Id sent to control flow table
+            data_last_id_processed_control_flow = json_loads( (db_conn.retrieve_data(query=QUERY_RETRIEVE_LAST_ID_CONTROL_DATA_FLOW_TABLE, query_name='Retrieve Last Sales Id in control flow table')).to_json(orient="records") )
+            last_id_processed_control_flow = int(data_last_id_processed_control_flow[0]['id'])
 
-                if last_id_business_table > last_id_processed_control_flow:
-                    df = db_conn.retrieve_data(query=QUERY_RETRIEVE_LATEST_SALES, params={"id": last_id_processed_control_flow}, query_name='Retrieve Last Sales')
-                    data = json_loads( df.to_json(orient="records") )
+            # get the last Id sent to queue in the previous process
+            data_last_id_business_table = json_loads( (db_conn.retrieve_data(query=QUERY_RETRIEVE_LAST_ID_BUSINESS_TABLE, query_name='Retrieve Last Sales Id')).to_json(orient="records") )
+            last_id_business_table = int(data_last_id_business_table[0]['id'])
 
-                    for msg in data:
-                        # send the data to producer
-                        queue.publisher (
-                                             topic=TOPIC_NAME
-                                            ,message=json_dumps(msg).encode('utf-8')
-                                            ,key=str(uuid4())
-                                        )
-                        queue.producer.poll(0)
+            if last_id_business_table > last_id_processed_control_flow:
+                df = db_conn.retrieve_data(query=QUERY_RETRIEVE_LATEST_SALES, params={"id": last_id_processed_control_flow}, query_name='Retrieve Last Sales')
+                data = json_loads( df.to_json(orient="records") )
 
-                    # Synchronous writes
-                    #queue.producer.flush()
+                for msg in data:
+                    # send the data to producer
+                    queue.publisher (
+                                            topic=TOPIC_NAME
+                                        ,message=json_dumps(msg).encode('utf-8')
+                                        ,key=str(uuid4())
+                                    )
 
-                    # get the last sales id in data flow
-                    sales_most_recent_date = df.iloc[df["id"].argmax()]
-                    last_sales_id = sales_most_recent_date['id']
+                # Synchronous writes
+                #queue.producer.flush()
 
-                    # update last sales Id on control table
-                    db_conn.update_data(query=UPDATE_LAST_SALES_ID, params={"id": str(last_sales_id)})
+                # get the last sales id in data flow
+                sales_most_recent_date = df.iloc[df["id"].argmax()]
+                last_sales_id = sales_most_recent_date['id']
 
-                # wait for the next process
-                time.sleep(message_sleep_time)
+                # update last sales Id on control table
+                db_conn.update_data(query=UPDATE_LAST_SALES_ID, params={"id": str(last_sales_id)})
 
-                # close dabatase connection after "N" retrieves
-                if message_get_attempts < max_message_get_attempts:
-                    message_get_attempts = message_get_attempts + 1
-                elif message_get_attempts == max_message_get_attempts:
-                    # disconnect db connection
-                    db_conn.close_cursor()
-                    db_conn.close_engines()
-                    db_conn.close_connection()
-                    # db objects
-                    db_conn.cursor = None
-                    db_conn.engine = None
-                    db_conn.conn = None
-                    # queuue objects
-                    queue.producer = None
-                    # reset counter
-                    message_get_attempts = 1
+            # wait for the next process
+            time.sleep(message_sleep_time)
+
+            # close dabatase connection after "N" retrieves
+            if message_get_attempts < max_message_get_attempts:
+                message_get_attempts = message_get_attempts + 1
+            elif message_get_attempts == max_message_get_attempts:
+                # disconnect db connection
+                db_conn.close_cursor()
+                db_conn.close_engines()
+                db_conn.close_connection()
+                # db objects
+                db_conn.cursor = None
+                db_conn.engine = None
+                db_conn.conn = None
+                # queuue objects
+                queue.producer = None
+                # reset counter
+                message_get_attempts = 1
 
     except BaseException as err:
         logger.error("(ERROR) Failed attempt to send message!")
