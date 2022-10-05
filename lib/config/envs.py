@@ -23,4 +23,9 @@ TOPIC_NAME = environ.get("TOPIC_NAME", data["MessageQueue"]["TOPIC_NAME"])
 MESSAGE_SLEEP_TIME = environ.get("MESSAGE_SLEEP_TIME", data["MessageQueue"]["MESSAGE_SLEEP_TIME"])
 MESSAGE_GET_ATTEMPTS = environ.get("MESSAGE_GET_ATTEMPTS", data["MessageQueue"]["MESSAGE_GET_ATTEMPTS"])
 
+SECURITY_PROTOCOL = environ.get("SECURITY_PROTOCOL", data["MessageQueue"]["SECURITY_PROTOCOL"])
+AUTHENTICATION_MECHANISM = environ.get("AUTHENTICATION_MECHANISM", data["MessageQueue"]["AUTHENTICATION_MECHANISM"])
+USER_PRINCIPAL = environ.get("USER_PRINCIPAL", data["MessageQueue"]["USER_PRINCIPAL"])
+USER_SECRET = environ.get("USER_SECRET", data["MessageQueue"]["USER_SECRET"])
+
 PROJECT_PATH = environ.get("PROJECT_PATH", data["OsEnv"]["ProjectPath"])

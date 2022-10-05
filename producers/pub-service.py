@@ -11,7 +11,7 @@ sys_path.append(PROJECT_PATH) if PROJECT_PATH not in sys_path else True
 
 import time
 from lib.helpers.logging import get_logger
-from lib.config.envs import DATABASE_ENGINE, DATABASE_HOST, DATABASE_NAME, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD, SECONDS_DB_CONN, DATABASE_RECONNECTION_ATTEMPTS, BOOTSTRAP_SERVERS, TOPIC_NAME, MESSAGE_SLEEP_TIME, MESSAGE_GET_ATTEMPTS
+from lib.config.envs import DATABASE_ENGINE, DATABASE_HOST, DATABASE_NAME, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD, SECONDS_DB_CONN, DATABASE_RECONNECTION_ATTEMPTS, BOOTSTRAP_SERVERS, TOPIC_NAME, MESSAGE_SLEEP_TIME, MESSAGE_GET_ATTEMPTS, SECURITY_PROTOCOL, AUTHENTICATION_MECHANISM, USER_PRINCIPAL, USER_SECRET
 from lib.sql.dql import QUERY_RETRIEVE_LATEST_SALES, QUERY_RETRIEVE_LAST_ID_BUSINESS_TABLE, QUERY_RETRIEVE_LAST_ID_CONTROL_DATA_FLOW_TABLE
 from lib.sql.dml import UPDATE_LAST_SALES_ID
 from lib.respositories.base import MessageQueue, Database
@@ -28,10 +28,14 @@ logger = get_logger('pub-service')
 if __name__ == "__main__":
     try:
         conf = {
-        "bootstrap.servers": BOOTSTRAP_SERVERS
+        "bootstrap.servers": BOOTSTRAP_SERVERS,
+        "sasl.mechanism": AUTHENTICATION_MECHANISM,
+        "security.protocol": SECURITY_PROTOCOL
         }
 
-       
+        if AUTHENTICATION_MECHANISM != 'GSSAPI':
+            conf.update({"sasl.username": USER_PRINCIPAL, "sasl.password": USER_SECRET})
+
         # Instantiate Producer
         queue = MessageQueue()
 
@@ -51,6 +55,8 @@ if __name__ == "__main__":
         del DATABASE_HOST
         del DATABASE_PORT
         del DATABASE_NAME
+        del USER_PRINCIPAL
+        del USER_SECRET
 
         # Infinite loop - runs until you kill the program
         while True:
