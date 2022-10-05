@@ -60,8 +60,6 @@ if __name__ == "__main__":
 
         # Infinite loop - runs until you kill the program
         while True:
-            queue.producer.poll(1)
-
             if message_get_attempts == 1:
                 # the first producer connection or renew after a long time
                 queue.producer = Producer(**conf)
@@ -86,7 +84,7 @@ if __name__ == "__main__":
                 for msg in data:
                     # send the data to producer
                     queue.publisher (
-                                            topic=TOPIC_NAME
+                                         topic=TOPIC_NAME
                                         ,message=json_dumps(msg).encode('utf-8')
                                         ,key=str(uuid4())
                                     )
@@ -120,7 +118,8 @@ if __name__ == "__main__":
                 queue.producer = None
                 # reset counter
                 message_get_attempts = 1
-
+            
+            queue.producer.poll(1)
     except BaseException as err:
         logger.error("(ERROR) Failed attempt to send message!")
         logger.error(str(err))
